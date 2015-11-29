@@ -1,8 +1,8 @@
-// Derived from https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiClient/WiFiClient.ino
-/*
- *  This sketch sends data via HTTP GET requests to data.sparkfun.com service.
+/*  Derived from https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiClient/WiFiClient.ino
+ * 
+ *  This sketch sends data via HTTP GET requests to maker.ifttt.com service.
  *
- *  You need to get streamId and privateKey at data.sparkfun.com and paste them
+ *  You need to get a privateKey at maker.ifttt and paste it
  *  below. Or just customize this script to talk to other HTTP servers.
  *
  */
@@ -12,11 +12,11 @@
 const char* ssid     = "your-ssid";
 const char* password = "your-password";
 
-const char* host = "data.sparkfun.com";
-const char* streamId   = "....................";
-const char* privateKey = "....................";
+const char* host = "maker.ifttt.com";
+const char* privateKey = "your-privateKey";
+const char* eventName   = "esp8266_doorbell";
 
-const int retryLimit = 5;
+const int retryLimit = 10;
 
 // Using a static IP should save time
 IPAddress ip(192, 168, 1, 100);
@@ -38,12 +38,10 @@ bool sendNotification() {
   }
   
   // We now create a URI for the request
-  String url = "/input/";
-  url += streamId;
-  url += "?private_key=";
+  String url = "/trigger/";
+  url += eventName;
+  url += "/with/key/";
   url += privateKey;
-  url += "&value=";
-  //url += value;
   
   Serial.print("Requesting URL: ");
   Serial.println(url);
@@ -62,6 +60,7 @@ bool sendNotification() {
   
   Serial.println();
   Serial.println("closing connection\n");
+  delay(100);
 
   return true;
 }
@@ -82,7 +81,7 @@ void setup() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
   
-  WiFi.begin(ssid);
+  WiFi.begin(ssid, password);
   WiFi.config(ip, gateway, subnet);  
   
   while (WiFi.status() != WL_CONNECTED) {
@@ -95,27 +94,18 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  int i = 0;
   bool worked = sendNotification();
-  i = 0;
-  while (!worked && i < retryLimit){
-     Serial.println("Try #" + (i+1));  
+  int tries = 0;
+  while (!worked && tries < retryLimit){
+     delay(500);
+     Serial.println("Try #" + (tries+1));  
      worked = sendNotification();
-     i++;
+     tries++;
   }
- 
-  if (worked) {
-  Serial.println("Going down.");
-  digitalWrite(2, LOW);
-  }
-
 }
 
-
-//int value = 0;
-
 void loop() {
-  Serial.println("There was a problem...");
-  delay(5000);
+  /* Turns off GPIO2 which should bring CH_PD low */
+  digitalWrite(2, LOW);
 }
 
